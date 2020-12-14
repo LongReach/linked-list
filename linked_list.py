@@ -1,3 +1,4 @@
+
 class ListNode(object):
 
     def __init__(self, item):
@@ -7,11 +8,14 @@ class ListNode(object):
 
 class LinkedList(object):
 
-    def __init__(self, iterable):
+    def __init__(self, iterable=None):
 
         self.head = None
         self.tail = None
         self.length = 0
+        # if we deal with a node that's not the head or tail, cached_node/cached_index keep track of it
+        self.cached_node = None
+        self.cached_index = -1
 
         if iterable is not None:
             for i in iterable:
@@ -28,6 +32,7 @@ class LinkedList(object):
             self.head.prev = node
             self.head = node
         self.length = self.length + 1
+        self._adjust_cache(True, 0)
 
     def add_tail(self, item):
 
@@ -40,6 +45,7 @@ class LinkedList(object):
             self.tail.next = node
             self.tail = node
         self.length = self.length + 1
+        self._adjust_cache(True, self.length-1)
 
     def pop_head(self):
 
@@ -51,6 +57,7 @@ class LinkedList(object):
         if self.tail is ret_node:
             self.tail = None
         self.length = self.length - 1
+        self._adjust_cache(False, 0)
         return ret_node.item
 
     def pop_tail(self):
@@ -63,6 +70,7 @@ class LinkedList(object):
         if self.head is ret_node:
             self.head = None
         self.length = self.length - 1
+        self._adjust_cache(False, self.length)
         return ret_node.item
 
     def size(self):
@@ -76,21 +84,62 @@ class LinkedList(object):
             node = node.next
         return ret_list
 
-words = ["alpha", "bravo", "charlie", "delto", "echo", "foxtrot"]
+    def _new_cache_item(self, idx):
+        if self.length == 0: return
+        node = self.head
+        for i in range(idx):
+            node = node.next
+        self.cached_node = node
+        self.cached_index = idx
 
+    def _adjust_cache(self, item_added, item_index):
+        if self.cached_index == -1: return
+        if item_added:
+            if item_index < self.cached_index:
+                self.cached_index = self.cached_index + 1
+        else:
+            # item removed
+            if self.length == 0:
+                self.cached_index = -1
+                self.cached_node = None
+            else:
+                if item_index < self.cached_index:
+                    self.cached_index = self.cached_index - 1
+        if self.cached_index >= self.length:
+            self.cached_index = self.length - 1
+
+
+
+def print_list_details(the_list, operation=None):
+    if operation is not None:
+        print("operation:", operation)
+    print("list is:", the_list.get_items())
+    print("    length is:", the_list.size())
+    print("    cached index:", the_list.cached_index)
+    print("    cached item:", "NONE" if the_list.cached_node is None else the_list.cached_node.item)
+    print("--------------------")
+
+words = ["alpha", "bravo", "charlie", "delta", "echo", "foxtrot"]
 ll = LinkedList(words)
-print("list is:", ll.get_items())
-print("length is:", ll.size())
+ll._new_cache_item(3)
+print_list_details(ll)
 ll.pop_head()
-print("popped head, list is:", ll.get_items())
-print("length is:", ll.size())
+print_list_details(ll, "popped head")
 ll.pop_tail()
-print("popped tail, list is:", ll.get_items())
-print("length is:", ll.size())
+print_list_details(ll, "popped tail")
 ll.add_head("A")
-print("new head, list is:", ll.get_items())
-print("length is:", ll.size())
+print_list_details(ll, "added head")
 ll.add_tail("F")
-print("new tail, list is:", ll.get_items())
-print("length is:", ll.size())
+print_list_details(ll, "added tail")
 
+ll2 = LinkedList()
+ll2.add_head("two")
+ll2.add_head("one")
+ll2._new_cache_item(0)
+print_list_details(ll2)
+ll2.pop_head()
+print_list_details(ll2, "pop head")
+ll2.pop_head()
+print_list_details(ll2, "pop head")
+ll2.add_head("---")
+print_list_details(ll2, "add head")
