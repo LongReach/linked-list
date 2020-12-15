@@ -1,4 +1,3 @@
-
 class ListNode(object):
 
     def __init__(self, item):
@@ -9,7 +8,6 @@ class ListNode(object):
 class LinkedList(object):
 
     def __init__(self, iterable=None):
-
         self.head = None
         self.tail = None
         self.length = 0
@@ -22,7 +20,6 @@ class LinkedList(object):
                 self.add_tail(i)
 
     def add_head(self, item):
-
         node = ListNode(item)
         if self.head is None:
             self.head = node
@@ -35,7 +32,6 @@ class LinkedList(object):
         self._adjust_cache(True, 0)
 
     def add_tail(self, item):
-
         node = ListNode(item)
         if self.tail is None:
             self.head = node
@@ -47,8 +43,26 @@ class LinkedList(object):
         self.length = self.length + 1
         self._adjust_cache(True, self.length-1)
 
-    def pop_head(self):
+    def insert(self, item, index=0):
+        if index < 0 or index > self.length:
+            raise IndexError("linked list index out of range")
+        if index == 0:
+            self.add_head(item)
+        elif index == self.length:
+            self.add_tail(item)
+        else:
+            node_to_precede = self._get_to_index(index)
+            new_node = ListNode(item)
+            new_node.prev = node_to_precede.prev
+            new_node.next = node_to_precede
+            if new_node.prev is not None:
+                new_node.prev.next = new_node
+            node_to_precede.prev = new_node
+            self.length = self.length + 1
+            self.cached_node = new_node
+            self.cached_index = index
 
+    def pop_head(self):
         if self.head is None: return None
         ret_node = self.head
         self.head = ret_node.next
@@ -61,7 +75,6 @@ class LinkedList(object):
         return ret_node.item
 
     def pop_tail(self):
-
         if self.tail is None: return None
         ret_node = self.tail
         self.tail = ret_node.prev
@@ -75,6 +88,14 @@ class LinkedList(object):
 
     def size(self):
         return self.length
+
+    def get_item(self, index):
+        if index < 0 or index >= self.length:
+            raise IndexError("linked list index out of range")
+        node = self._get_to_index(index)
+        self.cached_node = node
+        self.cached_index = index
+        return node.item
 
     def get_items(self):
         ret_list = []
@@ -92,10 +113,30 @@ class LinkedList(object):
         self.cached_node = node
         self.cached_index = idx
 
+    def _get_to_index(self, target_idx):
+        start_idx = 0
+        step = 1
+        node = self.head
+        if self.cached_index != -1:
+            delta = target_idx - self.cached_index
+            if abs(delta) < target_idx:
+                # it is faster to start from the cached index
+                start_idx = self.cached_index
+                step = 1 if delta >= 0 else -1
+                node = self.cached_node
+        idx_steps = str(node.item)
+        for i in range(start_idx, target_idx, step):
+            node = node.next if (step == 1) else node.prev
+            idx_steps = idx_steps + " " + str(node.item)
+        #print("get to index steps:", idx_steps)
+        return node
+
+    # item_added: True if item was just added, False if remove
+    # item_index: which item was just added or subtracted
     def _adjust_cache(self, item_added, item_index):
         if self.cached_index == -1: return
         if item_added:
-            if item_index < self.cached_index:
+            if item_index <= self.cached_index:
                 self.cached_index = self.cached_index + 1
         else:
             # item removed
@@ -103,43 +144,49 @@ class LinkedList(object):
                 self.cached_index = -1
                 self.cached_node = None
             else:
-                if item_index < self.cached_index:
+                if item_index == self.cached_index:
+                    # We deleted the cached node
+                    self.cached_node = None
+                    self.cached_index = -1
+                elif item_index < self.cached_index:
                     self.cached_index = self.cached_index - 1
         if self.cached_index >= self.length:
             self.cached_index = self.length - 1
 
+    def _validate(self):
+        error_str = ""
+        count, node = 0, self.head
+        while node:
+            node = node.next
+            count = count + 1
+        if count != self.length:
+            error_str = "bad length, forward"
+            return False, error_str
+        count, node = 0, self.tail
+        while node:
+            node = node.prev
+            count = count + 1
+        if count != self.length:
+            error_str = "bad length, backward"
+            return False, error_str
+        if self.head is None and self.tail is not None:
+            error_str = "only tail defined"
+            return False, error_str
+        if self.head is not None and self.tail is None:
+            error_str = "only head defined"
+            return False, error_str
+        if self.cached_index == -1:
+            if self.cached_node is not None:
+                error_str = "cached node doesn't match index"
+                return False, error_str
+        else:
+            node = self.head
+            for i in range(self.cached_index):
+                node = node.next
+            if node is not self.cached_node:
+                error_str = "cached node doesn't match index"
+                return False, error_str
+        return True, ""
 
 
-def print_list_details(the_list, operation=None):
-    if operation is not None:
-        print("operation:", operation)
-    print("list is:", the_list.get_items())
-    print("    length is:", the_list.size())
-    print("    cached index:", the_list.cached_index)
-    print("    cached item:", "NONE" if the_list.cached_node is None else the_list.cached_node.item)
-    print("--------------------")
 
-words = ["alpha", "bravo", "charlie", "delta", "echo", "foxtrot"]
-ll = LinkedList(words)
-ll._new_cache_item(3)
-print_list_details(ll)
-ll.pop_head()
-print_list_details(ll, "popped head")
-ll.pop_tail()
-print_list_details(ll, "popped tail")
-ll.add_head("A")
-print_list_details(ll, "added head")
-ll.add_tail("F")
-print_list_details(ll, "added tail")
-
-ll2 = LinkedList()
-ll2.add_head("two")
-ll2.add_head("one")
-ll2._new_cache_item(0)
-print_list_details(ll2)
-ll2.pop_head()
-print_list_details(ll2, "pop head")
-ll2.pop_head()
-print_list_details(ll2, "pop head")
-ll2.add_head("---")
-print_list_details(ll2, "add head")
