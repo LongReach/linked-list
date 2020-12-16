@@ -14,11 +14,38 @@ class LinkedList(object):
     class NodeRef:
         def __init__(self, node=None, index=-1):
             self.node = node
-            self.index = index
+            self.idx = index
+
+        def set(self):
 
         def clear(self):
             self.node = None
-            self.index = -1
+            self.idx = -1
+
+        def valid(self):
+            return self.node is not None
+
+        def empty(self):
+            return self.node is None
+
+        def increment(self):
+            self.node = self.node.next
+            self.idx = self.idx + 1
+            if self.node is None:
+                self.idx = -1
+
+        def decrement(self):
+            self.node = self.node.prev
+            self.idx = self.idx - 1
+            if self.node is None:
+                self.idx = -1
+
+        def assign(self, other_ref):
+            self.node = other_ref.node
+            self.idx = other_ref.idx
+
+        def copy(self):
+            return LinkedList.NodeRef(self.node, self.idx)
 
 
     def __init__(self, iterable=None):
@@ -130,6 +157,9 @@ class LinkedList(object):
     # Returns current size of list
     def size(self):
         return self.length
+
+    def empty(self):
+        return self.length == 0
 
     # Gets item at index. Tries to use caching for extra speed.
     def get_item(self, index):
