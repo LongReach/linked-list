@@ -30,8 +30,8 @@ def examine_list_details(the_list, last_operation_str=None, expected_list=None):
     if verbose_test:
         print("list is:", the_list.get_items())
         print("    length is:", the_list.size())
-        print("    cached index:", the_list.cached_index)
-        print("    cached item:", "NONE" if the_list.cached_node is None else the_list.cached_node.item)
+        print("    cached index:", the_list.cached_ref.idx)
+        print("    cached item:", "NONE" if the_list.cached_ref.empty() else the_list.cached_ref.node.item)
     if not valid:
         validity_failure = True
         print("    *** validity failed ***, error code:", error_str)
@@ -189,10 +189,10 @@ print("python list", python_list)
 
 for i in range(10):
     rand_index = random.randrange(rand_ll.size())
-    old_cached_index = rand_ll.cached_index
+    old_cached_index = rand_ll.cached_ref.idx
     item = rand_ll.get_item(rand_index)
     if verbose_test:
-        print("Item at {} is:".format(rand_index), item, "cached index moves from {} to {}".format(old_cached_index, rand_ll.cached_index))
+        print("Item at {} is:".format(rand_index), item, "cached index moves from {} to {}".format(old_cached_index, rand_ll.cached_ref.idx))
     else:
         print("Item at {} is:".format(rand_index), item)
     valid, error_str = rand_ll._validate()
@@ -200,7 +200,7 @@ for i in range(10):
         print("Validity error:", error_str)
         validity_failure = True
     # make sure that retrieved item matches item in python list
-    if python_list[rand_ll.cached_index] != item:
+    if python_list[rand_ll.cached_ref.idx] != item:
         print("Cache index is wrong")
         validity_failure = True
 if validity_failure:

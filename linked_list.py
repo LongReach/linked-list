@@ -50,8 +50,7 @@ class LinkedList(object):
         self.head_ref = LinkedList.NodeRef()
         self.tail_ref = LinkedList.NodeRef()
         # if we deal with a node that's not the head or tail, cached_node/cached_index keep track of it
-        self.cached_node = None
-        self.cached_index = -1
+        self.cached_ref = LinkedList.NodeRef()
 
         if iterable is not None:
             for i in iterable:
@@ -61,8 +60,7 @@ class LinkedList(object):
     def clear(self):
         self.head_ref.clear()
         self.tail_ref.clear()
-        self.cached_node = None
-        self.cached_index = -1
+        self.cached_ref.clear()
 
     # Reverses the list in place
     def reverse_list(self):
@@ -77,8 +75,8 @@ class LinkedList(object):
         orig_tail = self.tail_ref.node
         self.tail_ref.set(self.head_ref.node, size-1)
         self.head_ref.set(orig_tail, 0)
-        if self.cached_index != -1:
-            self.cached_index = size - 1 - self.cached_index
+        if self.cached_ref.idx != -1:
+            self.cached_ref.idx = size - 1 - self.cached_ref.idx
 
     # Adds item to head of linked list
     def add_head(self, item):
@@ -123,8 +121,7 @@ class LinkedList(object):
                 new_node.prev.next = new_node
             node_to_precede.prev = new_node
             self.tail_ref.increment()
-            self.cached_node = new_node
-            self.cached_index = index
+            self.cached_ref.set(new_node, index)
 
     # Pops item from head of list, returns item
     def pop_head(self):
@@ -165,8 +162,7 @@ class LinkedList(object):
         if index < 0 or index >= self.size():
             raise IndexError("linked list index out of range")
         node = self._get_to_index(index)
-        self.cached_node = node
-        self.cached_index = index
+        self.cached_ref.set(node, index)
         return node.item
 
     # Locates item in list, starting from start_index.
@@ -184,8 +180,7 @@ class LinkedList(object):
         idx = start_index
         while node is not None:
             if node.item == item:
-                self.cached_node = node
-                self.cached_index = idx
+                self.cached_ref.set(node, idx)
                 return idx
             idx = idx + (-1 if backwards else 1)
             node = node.prev if backwards else node.next
@@ -206,8 +201,7 @@ class LinkedList(object):
         node = self.head_ref.node
         for i in range(idx):
             node = node.next
-        self.cached_node = node
-        self.cached_index = idx
+        self.cached_ref.set(node, idx)
 
     # Returns node at target_idx, takes advantage of caching
     def _get_to_index(self, target_idx):
@@ -216,9 +210,9 @@ class LinkedList(object):
         options = [(target_idx, 0, self.head_ref.node), # representing start of linked list
                          (target_idx - (self.size()-1), self.size()-1, self.tail_ref.node)] # end of l. list
 
-        if self.cached_index != -1:
+        if self.cached_ref.valid():
             # There is a cached node
-            options.append((target_idx - self.cached_index, self.cached_index, self.cached_node))
+            options.append((target_idx - self.cached_ref.idx, self.cached_ref.idx, self.cached_ref.node))
 
         # Find best option
         best_delta = self.size()
@@ -239,32 +233,29 @@ class LinkedList(object):
     # item_added: True if item was just added, False if removed
     # item_index: which item was just added or subtracted
     def _adjust_cache(self, item_added, item_index):
-        if self.cached_index == -1:
+        if self.cached_ref.idx == -1:
             # We don't have a cached node, so pick one and exit
             if self.size() > 0:
                 target_idx = int(self.size() / 2) # go to middle of list
-                self.cached_node = self._get_to_index(target_idx)
-                self.cached_index = target_idx
+                self.cached_ref.set(self._get_to_index(target_idx), target_idx)
             return
 
         if item_added:
-            if item_index <= self.cached_index:
-                self.cached_index = self.cached_index + 1 # cached node index pushed to right
+            if item_index <= self.cached_ref.idx:
+                self.cached_ref.increment() # cached node index pushed to right
         else:
             # item removed
             if self.size() == 0:
                 # The list is now empty
-                self.cached_index = -1
-                self.cached_node = None
+                self.cached_ref.clear()
             else:
-                if item_index == self.cached_index:
+                if item_index == self.cached_ref.idx:
                     # Cached node pointer was pointing to node that got deleted
-                    self.cached_node = None
-                    self.cached_index = -1
-                elif item_index < self.cached_index:
-                    self.cached_index = self.cached_index - 1
-        if self.cached_index >= self.size():
-            self.cached_index = self.size() - 1
+                    self.cached_ref.clear()
+                elif item_index < self.cached_ref.idx:
+                    self.cached_ref.decrement()
+        if self.cached_ref.idx >= self.size():
+            self.cached_ref.decrement()
 
     # Debugging feature; tests the linked list for validity. Returns False if list invalid, error code string
     def _validate(self):
@@ -289,15 +280,15 @@ class LinkedList(object):
         if self.head_ref.valid() and self.tail_ref.empty():
             error_str = "only head defined"
             return False, error_str
-        if self.cached_index == -1:
-            if self.cached_node is not None:
+        if self.cached_ref.idx == -1:
+            if self.cached_ref.node is not None:
                 error_str = "cached node doesn't match index"
                 return False, error_str
         else:
             node = self.head_ref.node
-            for i in range(self.cached_index):
+            for i in range(self.cached_ref.idx):
                 node = node.next
-            if node is not self.cached_node:
+            if node is not self.cached_ref.node:
                 error_str = "cached node doesn't match index"
                 return False, error_str
         return True, ""
