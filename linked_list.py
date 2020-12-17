@@ -56,6 +56,10 @@ class LinkedList(object):
             for i in iterable:
                 self.add_tail(i)
 
+    # --------------------------------------
+    # Functions for broadly changing list
+    # --------------------------------------
+
     # Empties the list
     def clear(self):
         self.head_ref.clear()
@@ -77,6 +81,10 @@ class LinkedList(object):
         self.head_ref.set(orig_tail, 0)
         if self.cached_ref.idx != -1:
             self.cached_ref.idx = size - 1 - self.cached_ref.idx
+
+    # --------------------------------------
+    # Functions for adding items
+    # --------------------------------------
 
     # Adds item to head of linked list
     def add_head(self, item):
@@ -123,6 +131,10 @@ class LinkedList(object):
             self.tail_ref.increment()
             self.cached_ref.set(new_node, index)
 
+    # --------------------------------------
+    # Functions for removing items
+    # --------------------------------------
+
     # Pops item from head of list, returns item
     def pop_head(self):
         if self.size() == 0: return
@@ -148,6 +160,28 @@ class LinkedList(object):
             self.head_ref.clear()
         self._adjust_cache(False, size - 1)
         return ret_node.item
+
+    def remove(self, index=0):
+        if index < 0 or (index > 0 and index >= self.size()):
+            print("bad index is",index,"size is", self.size())
+            raise IndexError("linked list index {} out of range".format(index))
+        if index == 0:
+            return self.pop_head()
+        elif index == self.size()-1:
+            return self.pop_tail()
+        else:
+            node_to_remove = self._get_to_index(index)
+            if node_to_remove.prev is not None:
+                node_to_remove.prev.next = node_to_remove.next
+            if node_to_remove.next is not None:
+                node_to_remove.next.prev = node_to_remove.prev
+            self.tail_ref.decrement()
+            self._adjust_cache(False, index)
+            return node_to_remove.item
+
+    # --------------------------------------
+    # Functions for getting items or information
+    # --------------------------------------
 
     # Returns current size of list
     def size(self):

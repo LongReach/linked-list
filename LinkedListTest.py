@@ -145,8 +145,8 @@ rand_ll = LinkedList()
 python_list = []
 for i in range(20):
     random_num = random.randrange(10000)
-    operations = ["add_head", "add_tail", "pop_head", "pop_tail", "insert"]
-    rand_op = random.randrange(5)
+    operations = ["add_head", "add_tail", "pop_head", "pop_tail", "insert", "remove"]
+    rand_op = random.randrange(6)
     rand_index = 0
     if rand_op == 0:
         rand_ll.add_head(random_num)
@@ -166,8 +166,13 @@ for i in range(20):
         rand_index = 0 if rand_ll.size() == 0 else random.randrange(rand_ll.size())
         rand_ll.insert(random_num, rand_index)
         python_list.insert(rand_index, random_num)
+    elif rand_op == 5:
+        rand_index = 0 if rand_ll.size() == 0 else random.randrange(rand_ll.size())
+        rand_ll.remove(rand_index)
+        if len(python_list) > 0:
+            python_list.pop(rand_index)
     op_str = operations[rand_op]
-    if rand_op == 0 or rand_op == 1 or rand_op == 4:
+    if rand_op == 0 or rand_op == 1 or rand_op == 4 or rand_op == 5:
         op_str = op_str + " " + str(random_num)
         if rand_op == 4:
             op_str = op_str + " at index " + str(rand_index)
