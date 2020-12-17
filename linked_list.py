@@ -16,7 +16,9 @@ class LinkedList(object):
             self.node = node
             self.idx = index
 
-        def set(self):
+        def set(self, node, index):
+            self.node = node
+            self.idx = index
 
         def clear(self):
             self.node = None
@@ -29,16 +31,12 @@ class LinkedList(object):
             return self.node is None
 
         def increment(self):
-            self.node = self.node.next
-            self.idx = self.idx + 1
-            if self.node is None:
-                self.idx = -1
+            if self.node is not None:
+                self.idx = self.idx + 1
 
         def decrement(self):
-            self.node = self.node.prev
-            self.idx = self.idx - 1
-            if self.node is None:
-                self.idx = -1
+            if self.node is not None:
+                self.idx = self.idx - 1
 
         def assign(self, other_ref):
             self.node = other_ref.node
@@ -49,9 +47,8 @@ class LinkedList(object):
 
 
     def __init__(self, iterable=None):
-        self.head = None
-        self.tail = None
-        self.length = 0
+        self.head_ref = LinkedList.NodeRef()
+        self.tail_ref = LinkedList.NodeRef()
         # if we deal with a node that's not the head or tail, cached_node/cached_index keep track of it
         self.cached_node = None
         self.cached_index = -1
@@ -62,59 +59,60 @@ class LinkedList(object):
 
     # Empties the list
     def clear(self):
-        self.head = None
-        self.tail = None
-        self.length = 0
+        self.head_ref.clear()
+        self.tail_ref.clear()
         self.cached_node = None
         self.cached_index = -1
 
     # Reverses the list in place
     def reverse_list(self):
-        node = self.head
+        size = self.size()
+        if size == 0: return
+        node = self.head_ref.node
         while node:
             orig_next = node.next
             node.next = node.prev
             node.prev = orig_next
             node = orig_next
-        orig_tail = self.tail
-        self.tail = self.head
-        self.head = orig_tail
+        orig_tail = self.tail_ref.node
+        self.tail_ref.set(self.head_ref.node, size-1)
+        self.head_ref.set(orig_tail, 0)
         if self.cached_index != -1:
-            self.cached_index = self.length - 1 - self.cached_index
+            self.cached_index = size - 1 - self.cached_index
 
     # Adds item to head of linked list
     def add_head(self, item):
         node = ListNode(item)
-        if self.head is None:
-            self.head = node
-            self.tail = node
+        if self.size() == 0:
+            self.head_ref.set(node, 0)
+            self.tail_ref.set(node, 0)
         else:
-            node.next = self.head
-            self.head.prev = node
-            self.head = node
-        self.length = self.length + 1
+            node.next = self.head_ref.node
+            self.head_ref.node.prev = node
+            self.head_ref.set(node, 0)
+            self.tail_ref.increment()
         self._adjust_cache(True, 0)
 
     # Adds item to tail of linked list
     def add_tail(self, item):
         node = ListNode(item)
-        if self.tail is None:
-            self.head = node
-            self.tail = node
+        size = self.size()
+        if size == 0:
+            self.head_ref.set(node, 0)
+            self.tail_ref.set(node, 0)
         else:
-            node.prev = self.tail
-            self.tail.next = node
-            self.tail = node
-        self.length = self.length + 1
-        self._adjust_cache(True, self.length-1)
+            node.prev = self.tail_ref.node
+            self.tail_ref.node.next = node
+            self.tail_ref.set(node, size)
+        self._adjust_cache(True, size)
 
     # Inserts item into list, before item at specified index. If index == length of list, place after last item.
     def insert(self, item, index=0):
-        if index < 0 or index > self.length:
+        if index < 0 or index > self.size():
             raise IndexError("linked list index out of range")
         if index == 0:
             self.add_head(item)
-        elif index == self.length:
+        elif index == self.size():
             self.add_tail(item)
         else:
             node_to_precede = self._get_to_index(index)
@@ -124,46 +122,47 @@ class LinkedList(object):
             if new_node.prev is not None:
                 new_node.prev.next = new_node
             node_to_precede.prev = new_node
-            self.length = self.length + 1
+            self.tail_ref.increment()
             self.cached_node = new_node
             self.cached_index = index
 
     # Pops item from head of list, returns item
     def pop_head(self):
-        if self.head is None: return None
-        ret_node = self.head
-        self.head = ret_node.next
-        if self.head is not None:
-            self.head.prev = None
-        if self.tail is ret_node:
-            self.tail = None
-        self.length = self.length - 1
+        if self.size() == 0: return
+        ret_node = self.head_ref.node
+        self.head_ref.set(ret_node.next, 0)
+        if self.head_ref.valid():
+            self.head_ref.node.prev = None
+        if self.tail_ref.node is ret_node:
+            self.tail_ref.clear()
+        self.tail_ref.decrement()
         self._adjust_cache(False, 0)
         return ret_node.item
 
     # Pops item from tail of list, returns item
     def pop_tail(self):
-        if self.tail is None: return None
-        ret_node = self.tail
-        self.tail = ret_node.prev
-        if self.tail is not None:
-            self.tail.next = None
-        if self.head is ret_node:
-            self.head = None
-        self.length = self.length - 1
-        self._adjust_cache(False, self.length)
+        size = self.size()
+        if size == 0: return
+        ret_node = self.tail_ref.node
+        self.tail_ref.set(ret_node.prev, size-2)
+        if self.tail_ref.valid():
+            self.tail_ref.node.next = None
+        if self.head_ref.node is ret_node:
+            self.head_ref.clear()
+        self._adjust_cache(False, size - 1)
         return ret_node.item
 
     # Returns current size of list
     def size(self):
-        return self.length
+        if self.head_ref.empty() or self.tail_ref.empty(): return 0
+        return self.tail_ref.idx - self.head_ref.idx + 1
 
     def empty(self):
-        return self.length == 0
+        return self.size() == 0
 
     # Gets item at index. Tries to use caching for extra speed.
     def get_item(self, index):
-        if index < 0 or index >= self.length:
+        if index < 0 or index >= self.size():
             raise IndexError("linked list index out of range")
         node = self._get_to_index(index)
         self.cached_node = node
@@ -178,8 +177,8 @@ class LinkedList(object):
     # Returns index of item
     def find_item(self, item, start_index=None, backwards=False):
         if start_index is None or start_index == -1:
-            start_index = self.length-1 if backwards else 0
-        if start_index < 0 or start_index >= self.length:
+            start_index = self.size()-1 if backwards else 0
+        if start_index < 0 or start_index >= self.size():
             raise IndexError("linked list index out of range")
         node = self._get_to_index(start_index)
         idx = start_index
@@ -195,7 +194,7 @@ class LinkedList(object):
     # Returns a Python list of items in list
     def get_items(self):
         ret_list = []
-        node = self.head
+        node = self.head_ref.node
         while(node):
             ret_list.append(node.item)
             node = node.next
@@ -203,8 +202,8 @@ class LinkedList(object):
 
     # For debugging purposes, changes the cached node
     def _new_cache_item(self, idx):
-        if self.length == 0: return
-        node = self.head
+        if self.size() == 0: return
+        node = self.head_ref.node
         for i in range(idx):
             node = node.next
         self.cached_node = node
@@ -214,15 +213,15 @@ class LinkedList(object):
     def _get_to_index(self, target_idx):
         # The idea is to pick the closest starting point: head of list, tail, or cached node
         # Each tuple: a delta value, a starting index, node
-        options = [(target_idx, 0, self.head), # representing start of linked list
-                         (target_idx - (self.length-1), self.length-1, self.tail)] # end of l. list
+        options = [(target_idx, 0, self.head_ref.node), # representing start of linked list
+                         (target_idx - (self.size()-1), self.size()-1, self.tail_ref.node)] # end of l. list
 
         if self.cached_index != -1:
             # There is a cached node
             options.append((target_idx - self.cached_index, self.cached_index, self.cached_node))
 
         # Find best option
-        best_delta = self.length
+        best_delta = self.size()
         best_op = options[0]
         for tup in options:
             if abs(tup[0]) < best_delta:
@@ -242,8 +241,8 @@ class LinkedList(object):
     def _adjust_cache(self, item_added, item_index):
         if self.cached_index == -1:
             # We don't have a cached node, so pick one and exit
-            if self.length > 0:
-                target_idx = int(self.length / 2) # go to middle of list
+            if self.size() > 0:
+                target_idx = int(self.size() / 2) # go to middle of list
                 self.cached_node = self._get_to_index(target_idx)
                 self.cached_index = target_idx
             return
@@ -253,7 +252,7 @@ class LinkedList(object):
                 self.cached_index = self.cached_index + 1 # cached node index pushed to right
         else:
             # item removed
-            if self.length == 0:
+            if self.size() == 0:
                 # The list is now empty
                 self.cached_index = -1
                 self.cached_node = None
@@ -264,30 +263,30 @@ class LinkedList(object):
                     self.cached_index = -1
                 elif item_index < self.cached_index:
                     self.cached_index = self.cached_index - 1
-        if self.cached_index >= self.length:
-            self.cached_index = self.length - 1
+        if self.cached_index >= self.size():
+            self.cached_index = self.size() - 1
 
     # Debugging feature; tests the linked list for validity. Returns False if list invalid, error code string
     def _validate(self):
         error_str = ""
-        count, node = 0, self.head
+        count, node = 0, self.head_ref.node
         while node:
             node = node.next
             count = count + 1
-        if count != self.length:
+        if count != self.size():
             error_str = "bad length, forward"
             return False, error_str
-        count, node = 0, self.tail
+        count, node = 0, self.tail_ref.node
         while node:
             node = node.prev
             count = count + 1
-        if count != self.length:
+        if count != self.size():
             error_str = "bad length, backward"
             return False, error_str
-        if self.head is None and self.tail is not None:
+        if self.head_ref.empty() and self.tail_ref.valid():
             error_str = "only tail defined"
             return False, error_str
-        if self.head is not None and self.tail is None:
+        if self.head_ref.valid() and self.tail_ref.empty():
             error_str = "only head defined"
             return False, error_str
         if self.cached_index == -1:
@@ -295,7 +294,7 @@ class LinkedList(object):
                 error_str = "cached node doesn't match index"
                 return False, error_str
         else:
-            node = self.head
+            node = self.head_ref.node
             for i in range(self.cached_index):
                 node = node.next
             if node is not self.cached_node:

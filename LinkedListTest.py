@@ -124,7 +124,7 @@ finds = [valid_finds, fail_finds]
 for find_list in finds:
     for f in find_list:
         try:
-            find_str = "good find:" if find_list is valid_finds else "bad find:"
+            find_str = "found:" if find_list is valid_finds else "couldn't find:"
             print("{} {} starting from {}{}".format(find_str, f[0], f[1], ", reverse=True" if f[2] else ""))
             fruit_ll.find_item(f[0], f[1], f[2])
         except (ValueError, IndexError):
