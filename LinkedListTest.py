@@ -114,6 +114,28 @@ class TestList(LinkedList):
         return super().find_item(item, start_index, backwards)
 
     @test_function_decorator
+    def copy(self, expected_list=None):
+        self.last_operation_str = "copy"
+        result = super().copy()
+        return TestList(result.get_items()) # A bit of a hack, but fine for testing
+
+    @test_function_decorator
+    def sort(self, reverse=False, val_func=None, expected_list=None):
+        self.last_operation_str = "sort"
+        return super().sort(reverse, val_func)
+
+    @test_function_decorator
+    def join(self, other_list, expected_list=None):
+        self.last_operation_str = "join"
+        super().join(other_list)
+
+    @test_function_decorator
+    def split(self, index, expected_list=None):
+        self.last_operation_str = "split"
+        result = super().split(index)
+        return TestList(result.get_items()) # A bit of a hack, but fine for testing
+
+    @test_function_decorator
     def test_new_cache_item(self, idx, expected_list=None):
         self.last_operation_str = "new_cached_item, idx={}".format(idx)
         self._new_cache_item(idx)
@@ -163,8 +185,7 @@ random.seed(random_seed)
 
 # First test: a few simple operations on a predefined linked list
 
-print("")
-print("TEST ONE")
+print("\nTEST ONE")
 words = ["alpha", "bravo", "charlie", "delta", "echo", "foxtrot"]
 callsign_ll = TestList(words)
 callsign_ll.verbosity = verbosity
@@ -181,8 +202,7 @@ if validity_failure:
 
 # Second test: a few simple operations on another predefined linked list
 
-print("")
-print("TEST TWO")
+print("\nTEST TWO")
 number_ll = TestList()
 number_ll.verbosity = verbosity
 number_ll.add_head("two")
@@ -197,8 +217,7 @@ if validity_failure:
 
 # Third test: more list modifications. Also, we try searches for indices NOT in the list.
 
-print("")
-print("TEST THREE")
+print("\nTEST THREE")
 fruit_ll = TestList(["apple", "orange", "pear", "banana", "grape", "lemon", "lime", "grapefruit"])
 fruit_ll.verbosity = verbosity
 fruit_ll.get_item(2)
@@ -221,8 +240,7 @@ if validity_failure:
 
 # Fourth test: perform finds on same list as last test. Some finds are expected to succeed, others to fail
 
-print("")
-print("FIND TEST")
+print("\nFIND TEST")
 # We should have: ['tomato', 'apple', 'orange', 'pear', 'coconut', 'banana', 'grape', 'lemon', 'lime', 'grapefruit']
 # Each tuple: item, start index, reverse or not
 valid_finds = [("coconut", 0, False), ("apple", 4, True), ("lime", 3, False), ("pear", -1, True)]
@@ -248,8 +266,7 @@ if validity_failure:
 # This test creates an empty list, then performs a series of random operations on it, putting in random numbers
 # At the same time, we perform the same operations on a regular Python list, which we compare to the linked list.
 
-print("")
-print("RANDOM TEST: seed={}".format(random_seed))
+print("\nRANDOM TEST: seed={}".format(random_seed))
 rand_ll = TestList()
 rand_ll.verbosity = verbosity
 python_list = []
@@ -292,8 +309,7 @@ if validity_failure:
 
 # Sixth test: perform a series of random searches on last list created
 
-print("")
-print("RANDOM SEARCHES, seed={}".format(random_seed))
+print("\nRANDOM SEARCHES, seed={}".format(random_seed))
 # Now add some more random numbers
 for i in range(10):
     random_num = random.randrange(10000)
@@ -320,6 +336,51 @@ for i in range(10):
         validity_failure = True
 if validity_failure:
     failed_tests.append("RANDOM SEARCHES")
+    validity_failure = False
+
+print("\nSORTING")
+sort_ll = TestList(['h', 'b', 'j', 'e', 'a', 'c', 'f', 'd', 'g', 'i'])
+print("pre-sorted:", sort_ll.get_items())
+sort_ll.sort()
+sorted_items = sort_ll.get_items()
+print("sorted to:", sorted_items)
+sorted_python_rand_list = rand_ll.get_items()
+sorted_python_rand_list.sort()
+rand_ll.sort(expected_list=sorted_python_rand_list)
+print("sorted rand list:", rand_ll.get_items())
+sorted_python_rand_list.sort(reverse=True)
+rand_ll.sort(reverse=True, expected_list=sorted_python_rand_list)
+print("sorted rand list, reverse:", rand_ll.get_items())
+if validity_failure:
+    failed_tests.append("SORTING")
+    validity_failure = False
+
+print("\nJOINING")
+join_list1 = TestList(["elephant", "giraffe", "hippo"])
+join_list2 = TestList(["gazelle", "rhinoceros"])
+print("join list 1:", join_list1.get_items())
+print("join list 2:", join_list2.get_items())
+join_list1.join(join_list2, expected_list=["elephant", "giraffe", "hippo", "gazelle", "rhinoceros"])
+print("new join list 1:", join_list1.get_items())
+print("new join list 2:", join_list2.get_items())
+join_list2.join(join_list1, expected_list=["elephant", "giraffe", "hippo", "gazelle", "rhinoceros"])
+if validity_failure:
+    failed_tests.append("JOINING")
+    validity_failure = False
+
+print("\nSPLITTING")
+print("split list:", join_list2.get_items())
+split_off_list = join_list2.split(2, expected_list=["elephant", "giraffe"])
+print("split-off list:", split_off_list.get_items())
+print("remaining list:", join_list2.get_items())
+split_off_list2 = join_list2.split(2)
+split_off_list2.add_tail("bat")
+join_list2.join(split_off_list2, expected_list=["elephant", "giraffe", "bat"])
+split_off_list.join(TestList(["meerkat"]), expected_list=["hippo", "gazelle", "rhinoceros", "meerkat"])
+big_combined_list = join_list2.copy()
+big_combined_list.join(split_off_list, expected_list=["elephant", "giraffe", "bat", "hippo", "gazelle", "rhinoceros", "meerkat"])
+if validity_failure:
+    failed_tests.append("SPLITTING")
     validity_failure = False
 
 if len(failed_tests) > 0:

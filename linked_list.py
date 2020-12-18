@@ -57,32 +57,6 @@ class LinkedList(object):
                 self.add_tail(i)
 
     # --------------------------------------
-    # Functions for broadly changing list
-    # --------------------------------------
-
-    # Empties the list
-    def clear(self):
-        self.head_ref.clear()
-        self.tail_ref.clear()
-        self.cached_ref.clear()
-
-    # Reverses the list in place
-    def reverse_list(self):
-        size = self.size()
-        if size == 0: return
-        node = self.head_ref.node
-        while node:
-            orig_next = node.next
-            node.next = node.prev
-            node.prev = orig_next
-            node = orig_next
-        orig_tail = self.tail_ref.node
-        self.tail_ref.set(self.head_ref.node, size-1)
-        self.head_ref.set(orig_tail, 0)
-        if self.cached_ref.idx != -1:
-            self.cached_ref.idx = size - 1 - self.cached_ref.idx
-
-    # --------------------------------------
     # Functions for adding items
     # --------------------------------------
 
@@ -231,6 +205,89 @@ class LinkedList(object):
         return ret_list
 
     # --------------------------------------
+    # Functions for broadly changing list
+    # --------------------------------------
+
+    # Empties the list
+    def clear(self):
+        self.head_ref.clear()
+        self.tail_ref.clear()
+        self.cached_ref.clear()
+
+    # Makes a copy of this list
+    def copy(self):
+        new_list = LinkedList()
+        node = self.head_ref.node
+        while node:
+            new_list.add_tail(node.item)
+            node = node.next
+        return new_list
+
+    # Reverses the list in place
+    def reverse_list(self):
+        size = self.size()
+        if size == 0: return
+        node = self.head_ref.node
+        while node:
+            orig_next = node.next
+            node.next = node.prev
+            node.prev = orig_next
+            node = orig_next
+        orig_tail = self.tail_ref.node
+        self.tail_ref.set(self.head_ref.node, size-1)
+        self.head_ref.set(orig_tail, 0)
+        if self.cached_ref.idx != -1:
+            self.cached_ref.idx = size - 1 - self.cached_ref.idx
+
+    def sort(self, reverse=False, val_func=None):
+        _compare_func = self._get_compare_func(val_func, reverse)
+        size = self.size()
+        if size == 0 or size == 1: return
+        new_start_node = self._merge_sort_sublist(self.head_ref.node, self.tail_ref.node, 0, size-1, _compare_func)
+        self.head_ref.set(new_start_node, 0)
+        new_tail_node = new_start_node
+        while new_tail_node.next is not None:
+            new_tail_node = new_tail_node.next
+        self.tail_ref.set(new_tail_node, size-1)
+        self.cached_ref.clear()
+
+    def join(self, other_list):
+        size = self.size()
+        size2 = other_list.size()
+        if size == 0:
+            self.head_ref.set(other_list.head_ref.node, other_list.head_ref.idx)
+            self.tail_ref.set(other_list.tail_ref.node, other_list.tail_ref.idx)
+        else:
+            tail_node = self.tail_ref.node
+            tail_node.next = other_list.head_ref.node
+            if tail_node.next is not None:
+                tail_node.next.prev = tail_node
+            new_tail_node = other_list.tail_ref.node
+            if new_tail_node is None:
+                new_tail_node = tail_node
+            self.tail_ref.set(new_tail_node, size + size2 - 1)
+        other_list.clear()
+        self.cached_ref.clear()
+
+    def split(self, index):
+        size = self.size()
+        if index < 0 or index > size:
+            raise IndexError("linked list index out of range")
+        new_list = LinkedList()
+        if index == size:
+            # simply return an empty list
+            return new_list
+        split_node = self._get_to_index(index)
+        new_tail = split_node.prev
+        if new_tail is not None:
+            new_tail.next = None
+        new_list.head_ref.set(split_node, 0)
+        new_list.tail_ref.set(self.tail_ref.node, size - index - 1)
+        self.tail_ref.set(new_tail, index-1)
+        self.cached_ref.clear()
+        return new_list
+
+    # --------------------------------------
     # Private helper functions, for internal use
     # --------------------------------------
 
@@ -295,5 +352,70 @@ class LinkedList(object):
                     self.cached_ref.decrement()
         if self.cached_ref.idx >= self.size():
             self.cached_ref.decrement()
+
+    def _get_compare_func(self, val_func, reverse):
+        def _val_func(item):
+            return item
+        if not val_func: val_func = _val_func
+
+        def _compare_func(n1, n2): # Returns True if n1, n2 in correct order
+            return not reverse if val_func(n1.item) < val_func(n2.item) else reverse
+        return _compare_func
+
+    # Returns new start node of sorted sublist
+    def _merge_sort_sublist(self, start_node, end_node, start_index, end_index, compare_func):
+        if start_index >= end_index:
+            start_node.next = None
+            return start_node
+        if (end_index - start_index) == 1:
+            # swap the nodes, if necessary
+            if not compare_func(start_node, end_node): # Returns True if first node should come first
+                end_node.next = start_node # end node becomes start node
+                start_node.prev = end_node # start node becomes end node
+                end_node.prev = None
+                start_node.next = None
+                return end_node
+
+        median_node = start_node
+        median_index = int((start_index + end_index) / 2)
+        for i in range(0, median_index-start_index):
+            median_node = median_node.next
+        median_plus_one_node = median_node.next
+        #print("median node is", median_node.item)
+        new_start_node = self._merge_sort_sublist(start_node, median_node, start_index, median_index, compare_func)
+        new_median_node = self._merge_sort_sublist(median_plus_one_node, end_node, median_index+1, end_index, compare_func)
+        result = self._merge_lists(new_start_node, new_median_node, compare_func)
+        return result
+
+    def _merge_lists(self, list1_start, list2_start, compare_func):
+        new_head = None
+        tail = None
+        node1 = list1_start
+        node2 = list2_start
+        while node1 is not None and node2 is not None:
+            choice = None
+            if compare_func(node1, node2): # Returns True if first node should come first
+                choice = node1
+                node1.prev = None
+                node1 = node1.next
+            else:
+                choice = node2
+                node2.prev = None
+                node2 = node2.next
+            if new_head is None:
+                new_head = choice
+            choice.prev = tail
+            if tail is not None:
+                tail.next = choice
+            tail = choice # the next pointer will continue to point where it was
+        if node1 is not None:
+            tail.next = node1
+            node1.prev = tail
+        elif node2 is not None:
+            tail.next = node2
+            node2.prev = tail
+        return new_head
+
+
 
 
