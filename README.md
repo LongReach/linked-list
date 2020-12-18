@@ -44,14 +44,15 @@ One innovation I added is the concept of a cached node. The linked list remember
 #### Whole List
 
 * clear
+* copy
 * reverse
+* sort
+* join (combine two lists into one)
+* split (split a list into two lists)
 
 #### Work-in-progress
 
 * Support for python iteration (`for item in linked_list`)
-* Sorting (merge sort)
-* Joining lists
-* Splitting list
 
 ## Running
 
