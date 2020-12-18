@@ -58,12 +58,14 @@ One innovation I added is the concept of a cached node. The linked list remember
 
 Run with:
 
-> python LinkedListTest --verbosity CODE -- seed RANDOMSEED
+> python LinkedListTest --verbosity CODE --seed RANDOMSEED --test TESTNUM --help
 
 Argument | Description
 ---------|------------
+`help` | Print help
 `verbosity` | Level of verbosity: 0 to 2. 2 is most verbose.
 `seed` | A seed for random number generation. Use same seed for repeatable results.
+`test` | Which test to run (don't specify to run all)
 
 ## Sample Output
 
