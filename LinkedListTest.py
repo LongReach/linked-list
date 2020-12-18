@@ -4,14 +4,156 @@ import argparse
 from linked_list import LinkedList
 
 parser = argparse.ArgumentParser(description='Tester program for LinkedListClass.')
-parser.add_argument("-v", "--verbose", help="If set, print extra info", action="store_true")
+parser.add_argument("--verbosity", help="Verbosity level (0=verbose, 1=semi-verbose, 2=silent)", type=int, default=1)
 parser.add_argument("--seed", help="A seed for random number generation (to reproduce same tests)", type=int, default=-1)
 args = parser.parse_args()
 
+verbosity = args.verbosity
+random_seed = args.seed
 validity_failure = False
 failed_tests = []
-verbose_test = args.verbose
-random_seed = args.seed
+
+# This decorator is important for testing. It wraps most of the functions in the LinkedList class, allowing an
+# examination of the list after each change to it. If the verbosity level is high, some information is printed
+# out after each operation on the list. If the verbosity level is low, the wrapper function only prints messages about
+# errors with the list.
+def test_function_decorator(func_to_wrap):
+    # ref is to the linked list
+    def wrapper(ref, *argc, **kwargs):
+        global validity_failure
+        result = func_to_wrap(ref, *argc, **kwargs)
+        # is there an expected list?
+        expected_list = kwargs.get('expected_list')
+        valid, error_str = ref.validate() # Test the validity of the list
+        if ref.last_operation_str is not None: # The name of the operation, e.g. "add_head", "pop_tail"
+            if ref.verbosity >= TestList.MEDIUM:
+                print("last_operation_str:", ref.last_operation_str)
+        if ref.verbosity == TestList.HIGH:
+            print("list is:", ref.get_items())
+            print("    length is:", ref.size())
+            print("    cached index:", ref.cached_ref.idx)
+            print("    cached item:", "NONE" if ref.cached_ref.empty() else ref.cached_ref.node.item)
+        if not valid:
+            validity_failure = True
+            print("    *** validity failed ***, error code:", error_str)
+        if expected_list is not None: # compare to a Python list of expected items
+            match = True
+            the_items = ref.get_items()
+            if len(expected_list) != len(the_items):
+                match = False
+            else:
+                for i, item in enumerate(expected_list):
+                    if expected_list[i] != the_items[i]:
+                        match = False
+            if not match:
+                validity_failure = True
+                print("    *** expected result failure ***:", expected_list)
+        if ref.verbosity == TestList.HIGH:
+            print("--------------------")
+        return result
+    return wrapper
+
+# This subclass of LinkedList wraps many of its functions with the test function above
+class TestList(LinkedList):
+
+    LOW = 0
+    MEDIUM = 1
+    HIGH = 2
+
+    def __init__(self, iterable=None):
+        self.verbosity = TestList.LOW
+        super().__init__(iterable)
+        self.last_operation_str = "" # a string representation of the last operation, e.g. "add_tail"
+
+    # The decorated functions wrap the same functions in base class. In each case, the expected_list parameter
+    # can be a Python list that contains the expected items
+
+    @test_function_decorator
+    def reverse_list(self, expected_list=None):
+        self.last_operation_str = "reverse_list"
+        super().reverse_list()
+
+    @test_function_decorator
+    def add_head(self, item, expected_list=None):
+        self.last_operation_str = "add_head, item={}".format(item)
+        super().add_head(item)
+
+    @test_function_decorator
+    def add_tail(self, item, expected_list=None):
+        self.last_operation_str = "add_tail, item={}".format(item)
+        super().add_tail(item)
+
+    @test_function_decorator
+    def insert(self, item, index=0, expected_list=None):
+        self.last_operation_str = "insert, item={} at {}".format(item, index)
+        super().insert(item, index)
+
+    @test_function_decorator
+    def pop_head(self, expected_list=None):
+        self.last_operation_str = "pop_head"
+        return super().pop_head()
+
+    @test_function_decorator
+    def pop_tail(self, expected_list=None):
+        self.last_operation_str = "pop_tail"
+        return super().pop_tail()
+
+    @test_function_decorator
+    def remove(self, index=0, expected_list=None):
+        self.last_operation_str = "remove, index={}".format(index)
+        return super().remove(index)
+
+    @test_function_decorator
+    def get_item(self, index, expected_list=None):
+        self.last_operation_str = "get_item, index={}".format(index)
+        return super().get_item(index)
+
+    @test_function_decorator
+    def find_item(self, item, start_index=None, backwards=False, expected_list=None):
+        self.last_operation_str = "find_item, item={} at {}, backwards={}".format(item, start_index, backwards)
+        return super().find_item(item, start_index, backwards)
+
+    @test_function_decorator
+    def test_new_cache_item(self, idx, expected_list=None):
+        self.last_operation_str = "new_cached_item, idx={}".format(idx)
+        self._new_cache_item(idx)
+
+    # Debugging feature; tests the linked list for validity. Returns False if list invalid, error code string
+    def validate(self):
+        error_str = ""
+        count, node = 0, self.head_ref.node
+        while node:
+            node = node.next
+            count = count + 1
+        if count != self.size():
+            error_str = "bad length, forward"
+            return False, error_str
+        count, node = 0, self.tail_ref.node
+        while node:
+            node = node.prev
+            count = count + 1
+        if count != self.size():
+            error_str = "bad length, backward"
+            return False, error_str
+        if self.head_ref.empty() and self.tail_ref.valid():
+            error_str = "only tail defined"
+            return False, error_str
+        if self.head_ref.valid() and self.tail_ref.empty():
+            error_str = "only head defined"
+            return False, error_str
+        if self.cached_ref.idx == -1:
+            if self.cached_ref.node is not None:
+                error_str = "cached node doesn't match index"
+                return False, error_str
+        else:
+            node = self.head_ref.node
+            for i in range(self.cached_ref.idx):
+                node = node.next
+            if node is not self.cached_ref.node:
+                error_str = "cached node doesn't match index"
+                return False, error_str
+        return True, ""
+
 
 if random_seed == -1:
     # choose a seed at random (sort of)
@@ -19,88 +161,51 @@ if random_seed == -1:
 random.seed(random_seed)
 
 
-# Given a linked list, print information about it, validate the list, and compare to contents of a Python list
-# last_operation_str: string containing name of last last_operation_str
-# expected_list: if set, a Python list containing expected results of last last_operation_str
-def examine_list_details(the_list, last_operation_str=None, expected_list=None):
-    global validity_failure
-    valid, error_str = the_list._validate()
-    if last_operation_str is not None:
-        print("last_operation_str:", last_operation_str)
-    if verbose_test:
-        print("list is:", the_list.get_items())
-        print("    length is:", the_list.size())
-        print("    cached index:", the_list.cached_ref.idx)
-        print("    cached item:", "NONE" if the_list.cached_ref.empty() else the_list.cached_ref.node.item)
-    if not valid:
-        validity_failure = True
-        print("    *** validity failed ***, error code:", error_str)
-    if expected_list is not None:
-        match = True
-        the_items = the_list.get_items()
-        if len(expected_list) != len(the_items):
-            match = False
-        else:
-            for i, item in enumerate(expected_list):
-                if expected_list[i] != the_items[i]:
-                    match = False
-        if not match:
-            validity_failure = True
-            print("    *** expected result failure ***:", expected_list)
-    if verbose_test:
-        print("--------------------")
+# First test: a few simple operations on a predefined linked list
 
 print("")
 print("TEST ONE")
 words = ["alpha", "bravo", "charlie", "delta", "echo", "foxtrot"]
-callsign_ll = LinkedList(words)
-callsign_ll._new_cache_item(3)
-examine_list_details(callsign_ll, "new list, cache item 3")
+callsign_ll = TestList(words)
+callsign_ll.verbosity = verbosity
+callsign_ll.test_new_cache_item(3)
 callsign_ll.reverse_list()
-examine_list_details(callsign_ll, "reversed")
 callsign_ll.reverse_list()
 callsign_ll.pop_head()
-examine_list_details(callsign_ll, "popped head")
-callsign_ll.pop_tail()
-examine_list_details(callsign_ll, "popped tail", ['bravo', 'charlie', 'delta', 'echo'])
+callsign_ll.pop_tail(expected_list=['bravo', 'charlie', 'delta', 'echo'])
 callsign_ll.add_head("A")
-examine_list_details(callsign_ll, "added head")
 callsign_ll.add_tail("F")
-examine_list_details(callsign_ll, "added tail")
 if validity_failure:
     failed_tests.append("TEST ONE")
     validity_failure = False
 
+# Second test: a few simple operations on another predefined linked list
+
 print("")
 print("TEST TWO")
-number_ll = LinkedList()
+number_ll = TestList()
+number_ll.verbosity = verbosity
 number_ll.add_head("two")
 number_ll.add_head("one")
-number_ll._new_cache_item(0)
-examine_list_details(number_ll)
+number_ll.test_new_cache_item(0)
 number_ll.pop_head()
-examine_list_details(number_ll, "pop head")
-number_ll.pop_head()
-examine_list_details(number_ll, "pop head", expected_list=[])
-number_ll.add_head("zzz")
-examine_list_details(number_ll, "add head")
+number_ll.pop_head(expected_list=[])
+number_ll.add_head("zzz", expected_list=["zzz"])
 if validity_failure:
     failed_tests.append("TEST TWO")
     validity_failure = False
 
+# Third test: more list modifications. Also, we try searches for indices NOT in the list.
+
 print("")
 print("TEST THREE")
-fruit_ll = LinkedList(["apple", "orange", "pear", "banana", "grape", "lemon", "lime", "grapefruit"])
+fruit_ll = TestList(["apple", "orange", "pear", "banana", "grape", "lemon", "lime", "grapefruit"])
+fruit_ll.verbosity = verbosity
 fruit_ll.get_item(2)
-examine_list_details(fruit_ll, "get item 2")
 fruit_ll.get_item(5)
-examine_list_details(fruit_ll, "get item 5")
 fruit_ll.get_item(3)
-examine_list_details(fruit_ll, "get item 3")
 fruit_ll.insert("coconut", 3)
-examine_list_details(fruit_ll, "insert", ['apple', 'orange', 'pear', 'coconut', 'banana', 'grape', 'lemon', 'lime', 'grapefruit'])
 fruit_ll.insert("tomato", 0)
-examine_list_details(fruit_ll, "insert", ['tomato', 'apple', 'orange', 'pear', 'coconut', 'banana', 'grape', 'lemon', 'lime', 'grapefruit'])
 bad_indices = [17, -1, 500, -3]
 for bi in bad_indices:
     try:
@@ -114,10 +219,12 @@ if validity_failure:
     failed_tests.append("TEST THREE")
     validity_failure = False
 
+# Fourth test: perform finds on same list as last test. Some finds are expected to succeed, others to fail
+
 print("")
 print("FIND TEST")
 # We should have: ['tomato', 'apple', 'orange', 'pear', 'coconut', 'banana', 'grape', 'lemon', 'lime', 'grapefruit']
-# Each tuple: item, start index, reverse
+# Each tuple: item, start index, reverse or not
 valid_finds = [("coconut", 0, False), ("apple", 4, True), ("lime", 3, False), ("pear", -1, True)]
 fail_finds = [("apple", 4, False), ("sandwich", -1, False), ("kiwi", -1, True), ("lemon", 4, True), ("banana", 77, False)]
 finds = [valid_finds, fail_finds]
@@ -137,11 +244,14 @@ if validity_failure:
     failed_tests.append("FIND TEST")
     validity_failure = False
 
+# Fifth test:
 # This test creates an empty list, then performs a series of random operations on it, putting in random numbers
-# At the same time, we perform the same operations on a regular Python list, which we compare
+# At the same time, we perform the same operations on a regular Python list, which we compare to the linked list.
+
 print("")
 print("RANDOM TEST: seed={}".format(random_seed))
-rand_ll = LinkedList()
+rand_ll = TestList()
+rand_ll.verbosity = verbosity
 python_list = []
 for i in range(20):
     random_num = random.randrange(10000)
@@ -176,10 +286,11 @@ for i in range(20):
         op_str = op_str + " " + str(random_num)
         if rand_op == 4:
             op_str = op_str + " at index " + str(rand_index)
-    examine_list_details(rand_ll, op_str, python_list)
 if validity_failure:
     failed_tests.append("RANDOM TEST")
     validity_failure = False
+
+# Sixth test: perform a series of random searches on last list created
 
 print("")
 print("RANDOM SEARCHES, seed={}".format(random_seed))
@@ -188,7 +299,6 @@ for i in range(10):
     random_num = random.randrange(10000)
     rand_ll.add_tail(random_num)
     python_list.append(random_num)
-examine_list_details(rand_ll, expected_list=python_list)
 print("linked list", rand_ll.get_items())
 print("python list", python_list)
 
@@ -196,11 +306,11 @@ for i in range(10):
     rand_index = random.randrange(rand_ll.size())
     old_cached_index = rand_ll.cached_ref.idx
     item = rand_ll.get_item(rand_index)
-    if verbose_test:
+    if verbosity > 0:
         print("Item at {} is:".format(rand_index), item, "cached index moves from {} to {}".format(old_cached_index, rand_ll.cached_ref.idx))
     else:
         print("Item at {} is:".format(rand_index), item)
-    valid, error_str = rand_ll._validate()
+    valid, error_str = rand_ll.validate()
     if not valid:
         print("Validity error:", error_str)
         validity_failure = True
@@ -213,6 +323,8 @@ if validity_failure:
     validity_failure = False
 
 if len(failed_tests) > 0:
+    # If we don't get into this block of code, all tests were successful. If we do, we see a printout of which ones
+    # failed
     print("")
     print("FAILED TESTS")
     for t in failed_tests:

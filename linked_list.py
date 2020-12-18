@@ -161,6 +161,7 @@ class LinkedList(object):
         self._adjust_cache(False, size - 1)
         return ret_node.item
 
+    # Removes item at specified index, returns item
     def remove(self, index=0):
         if index < 0 or (index > 0 and index >= self.size()):
             print("bad index is",index,"size is", self.size())
@@ -229,6 +230,10 @@ class LinkedList(object):
             node = node.next
         return ret_list
 
+    # --------------------------------------
+    # Private helper functions, for internal use
+    # --------------------------------------
+
     # For debugging purposes, changes the cached node
     def _new_cache_item(self, idx):
         if self.size() == 0: return
@@ -290,42 +295,5 @@ class LinkedList(object):
                     self.cached_ref.decrement()
         if self.cached_ref.idx >= self.size():
             self.cached_ref.decrement()
-
-    # Debugging feature; tests the linked list for validity. Returns False if list invalid, error code string
-    def _validate(self):
-        error_str = ""
-        count, node = 0, self.head_ref.node
-        while node:
-            node = node.next
-            count = count + 1
-        if count != self.size():
-            error_str = "bad length, forward"
-            return False, error_str
-        count, node = 0, self.tail_ref.node
-        while node:
-            node = node.prev
-            count = count + 1
-        if count != self.size():
-            error_str = "bad length, backward"
-            return False, error_str
-        if self.head_ref.empty() and self.tail_ref.valid():
-            error_str = "only tail defined"
-            return False, error_str
-        if self.head_ref.valid() and self.tail_ref.empty():
-            error_str = "only head defined"
-            return False, error_str
-        if self.cached_ref.idx == -1:
-            if self.cached_ref.node is not None:
-                error_str = "cached node doesn't match index"
-                return False, error_str
-        else:
-            node = self.head_ref.node
-            for i in range(self.cached_ref.idx):
-                node = node.next
-            if node is not self.cached_ref.node:
-                error_str = "cached node doesn't match index"
-                return False, error_str
-        return True, ""
-
 
 
