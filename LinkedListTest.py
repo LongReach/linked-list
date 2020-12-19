@@ -20,7 +20,7 @@ random.seed(random_seed)
 
 failed_tests = []
 default_tests = ["BASIC TEST A", "BASIC TEST B", "BASIC TEST C", "FIND TEST", "RANDOM TEST", "RANDOM SEARCH",
-                 "SORTING", "JOINING", "SPLITTING"]
+                 "SORTING", "JOINING", "SPLITTING", "ITERATOR"]
 tests_to_run = set()
 if args.test == -1:
     for i in range(len(default_tests)):
@@ -226,6 +226,18 @@ if should_run_test(9):
     big_combined_list = join_list2.copy()
     big_combined_list.join(split_off_list, expected_list=["elephant", "giraffe", "bat", "hippo", "gazelle", "rhinoceros", "meerkat"])
     handle_test_failure(9)
+
+if should_run_test(10):
+    iterated_items = []
+    indices = []
+    for n,item in enumerate(fruit_ll):
+        indices.append(n)
+        iterated_items.append(item)
+    print("iterated items are:", iterated_items)
+    print("indices:", indices)
+    if not fruit_ll.compare(['tomato', 'apple', 'orange', 'pear', 'coconut', 'banana', 'grape', 'lemon', 'lime', 'grapefruit']):
+        tl.validity_failure = True
+    handle_test_failure(10)
 
 if len(failed_tests) > 0:
     # If we don't get into this block of code, all tests were successful. If we do, we see a printout of which ones

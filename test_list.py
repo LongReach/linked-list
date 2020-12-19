@@ -129,27 +129,38 @@ class TestList(LinkedList):
         self.last_operation_str = "new_cached_item, idx={}".format(idx)
         self._new_cache_item(idx)
 
+    def compare(self, expected_list):
+        if self.length != len(expected_list):
+            return False
+        i = 0
+        node = self.head
+        while(node):
+            if node.item != expected_list[i]: return False
+            node = node.next
+            i = i + 1
+        return True
+
     # Debugging feature; tests the linked list for validity. Returns False if list invalid, error code string
     def validate(self):
         error_str = ""
-        count, node = 0, self.head_ref.node
+        count, node = 0, self.head
         while node:
             node = node.next
             count = count + 1
         if count != self.size():
             error_str = "bad length, forward"
             return False, error_str
-        count, node = 0, self.tail_ref.node
+        count, node = 0, self.tail
         while node:
             node = node.prev
             count = count + 1
         if count != self.size():
             error_str = "bad length, backward"
             return False, error_str
-        if self.head_ref.empty() and self.tail_ref.valid():
+        if self.head is None and self.tail is not None:
             error_str = "only tail defined"
             return False, error_str
-        if self.head_ref.valid() and self.tail_ref.empty():
+        if self.head is not None and self.tail is None:
             error_str = "only head defined"
             return False, error_str
         if self.cached_ref.idx == -1:
@@ -157,7 +168,7 @@ class TestList(LinkedList):
                 error_str = "cached node doesn't match index"
                 return False, error_str
         else:
-            node = self.head_ref.node
+            node = self.head
             for i in range(self.cached_ref.idx):
                 node = node.next
             if node is not self.cached_ref.node:
