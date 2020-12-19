@@ -52,6 +52,8 @@ One innovation I added is the concept of a cached node. The linked list remember
 
 #### Work-in-progress
 
+![](images/PythonIterator.jpg)
+
 * Support for python iteration (`for item in linked_list`)
 
 ## Running
@@ -69,7 +71,28 @@ Argument | Description
 
 ## Sample Output
 
-A few random operations, involving random data.
+A few tests, less verbose output:
+
+```
+Running test 7: SORTING
+pre-sorted: ['h', 'b', 'j', 'e', 'a', 'c', 'f', 'd', 'g', 'i']
+sorted to: ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
+sorted rand list: [563, 568, 935, 1561, 2506, 3280, 6101, 6175, 9693, 9765]
+sorted rand list, reverse: [9765, 9693, 6175, 6101, 3280, 2506, 1561, 935, 568, 563]
+
+Running test 8: JOINING
+join list 1: ['elephant', 'giraffe', 'hippo']
+join list 2: ['gazelle', 'rhinoceros']
+new join list 1: ['elephant', 'giraffe', 'hippo', 'gazelle', 'rhinoceros']
+new join list 2: []
+
+Running test 9: SPLITTING
+split list: ['elephant', 'giraffe', 'hippo', 'gazelle', 'rhinoceros']
+split-off list: ['hippo', 'gazelle', 'rhinoceros']
+remaining list: ['elephant', 'giraffe']
+```
+
+A few random operations, involving random data. More verbose output.
 
 ```
 RANDOM TEST: seed=54217
