@@ -11,11 +11,15 @@ class ListNode(object):
 
 class LinkedList(object):
 
+    # Helper class. Refers to a node in a linked list with both the node pointer and its index in the list.
+    # For now, its two main purposes are for implementing the cached node and for implementing the Python
+    # iterator. I might later make this class more useful to outside callers.
     class NodeRef:
         def __init__(self, node=None, index=-1):
             self.node = node
             self.idx = index
 
+        # For iterator support
         def __next__(self):
             node = self.node
             if node is None:
@@ -57,8 +61,9 @@ class LinkedList(object):
             for i in iterable:
                 self.add_tail(i)
 
+    # Support for iteration using 'for'. A NodeRef object serves as the iterator.
     def __iter__(self):
-        return LinkedList.NodeRef(self.head, self.length-1)
+        return LinkedList.NodeRef(self.head, 0)
 
     def __sizeof__(self):
         return self.length
@@ -248,6 +253,8 @@ class LinkedList(object):
         if self.cached_ref.idx != -1:
             self.cached_ref.idx = size - 1 - self.cached_ref.idx
 
+    # Sorts the list. If the val_func is set, it must return a particular piece of data from the object stored in
+    # the list (presumably, they're all of the same type). Otherwise, the objects themselves will be compared.
     def sort(self, reverse=False, val_func=None):
         _compare_func = self._get_compare_func(val_func, reverse)
         size = self.size()
@@ -260,6 +267,7 @@ class LinkedList(object):
         self.tail = new_tail_node
         self.cached_ref.clear()
 
+    # Given another linked list, join its contents to the tail of this one. The other list is cleared.
     def join(self, other_list):
         size = self.size()
         size2 = other_list.size()
@@ -279,6 +287,8 @@ class LinkedList(object):
         other_list.clear()
         self.cached_ref.clear()
 
+    # Splits off a separate linked list, beginning with the item at index. If index is the same as the size of
+    # the list, then return an empty linked list.
     def split(self, index):
         size = self.size()
         if index < 0 or index > size:
@@ -311,7 +321,7 @@ class LinkedList(object):
             node = node.next
         self.cached_ref.set(node, idx)
 
-    # Returns node at target_idx, takes advantage of caching
+    # Returns node at target_idx, takes advantage of caching to get there more quickly
     def _get_to_index(self, target_idx):
         # The idea is to pick the closest starting point: head of list, tail, or cached node
         # Each tuple: a delta value, a starting index, node
@@ -365,6 +375,8 @@ class LinkedList(object):
         if self.cached_ref.idx >= self.size():
             self.cached_ref.decrement()
 
+    # The val_func, if specified, returns the value for comparison. If reverse is True, we are going higher-to-lower
+    # instead of lower to higher.
     def _get_compare_func(self, val_func, reverse):
         def _val_func(item):
             return item
@@ -374,7 +386,8 @@ class LinkedList(object):
             return not reverse if val_func(n1.item) < val_func(n2.item) else reverse
         return _compare_func
 
-    # Returns new start node of sorted sublist
+    # Given a sublist, use merge sort to sort it. Returns new start node of sorted sublist. The compare function
+    # returns true of the first item should come first.
     def _merge_sort_sublist(self, start_node, end_node, start_index, end_index, compare_func):
         if start_index >= end_index:
             start_node.next = None
@@ -399,7 +412,9 @@ class LinkedList(object):
         result = self._merge_lists(new_start_node, new_median_node, compare_func)
         return result
 
+    # Given two lists that have already been sorted using the same compare_func, merge them together
     def _merge_lists(self, list1_start, list2_start, compare_func):
+        # TODO: could be a little more efficient
         new_head = None
         tail = None
         node1 = list1_start
