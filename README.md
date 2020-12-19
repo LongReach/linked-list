@@ -50,11 +50,23 @@ One innovation I added is the concept of a cached node. The linked list remember
 * join (combine two lists into one)
 * split (split a list into two lists)
 
-#### Work-in-progress
+#### Iterator
 
 ![](images/PythonIterator.jpg)
 
-* Support for python iteration (`for item in linked_list`)
+The linked list can be iterated through in the standard Python way:
+ 
+```
+for item in linked_list:
+    # do something
+```
+
+Or
+
+```
+for n,item in enumerate(linked_list):
+    # do something
+```
 
 ## Running
 
