@@ -68,7 +68,11 @@ for n,item in enumerate(linked_list):
     # do something
 ```
 
-## Running
+## Running Tests
+
+![](images/GrenadeMonkey.jpg)
+
+`Unit-testing before going live is usually wise`
 
 Run with:
 
