@@ -6,6 +6,5 @@ setuptools.setup(
     author='LongReach',
     description="A linked list class",
     packages=setuptools.find_packages(),
-    scripts=["scripts/linked_list"],
-    install_requires=['requests']
+    scripts=["scripts/linked_list"]
 )

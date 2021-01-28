@@ -68,6 +68,12 @@ for n,item in enumerate(linked_list):
     # do something
 ```
 
+## Installation
+
+Download the whole package, then install from the top-level folder as follows:
+
+`D:\CodingProjects\Python\LinkedList>python scripts\linked_list>pip install .`
+
 ## Running Tests
 
 ![](images/GrenadeMonkey.jpg)
@@ -76,7 +82,11 @@ for n,item in enumerate(linked_list):
 
 Run with:
 
-> python LinkedListTest --verbosity CODE --seed RANDOMSEED --test TESTNUM --help
+(Windows)   
+`D:\CodingProjects\Python\LinkedList>python scripts\linked_list>python scripts\linked_list --verbosity CODE --seed RANDOMSEED --test TESTNUM --help`
+
+(Linux-y)  
+`$ linked_list --verbosity CODE --seed RANDOMSEED --test TESTNUM --help`
 
 Argument | Description
 ---------|------------
