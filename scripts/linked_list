@@ -1,0 +1,5 @@
+#!/usr/bin/env python
+
+import linked_list_pkg
+import tests
+
