@@ -1,4 +1,4 @@
-from linked_list import LinkedList
+from linked_list_pkg import LinkedList
 
 validity_failure = False
 

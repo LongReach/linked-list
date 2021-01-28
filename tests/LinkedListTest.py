@@ -1,8 +1,7 @@
 import random
 import time
 import argparse
-import test_list as tl
-from linked_list import LinkedList
+import tests as tl
 
 parser = argparse.ArgumentParser(description='Tester program for LinkedListClass.')
 parser.add_argument("--verbosity", help="Verbosity level (0=verbose, 1=semi-verbose, 2=silent)", type=int, default=1)
