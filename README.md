@@ -22,9 +22,9 @@ One innovation I added is the concept of a node cache. That is, the linked list 
 
 ## Operations
 
-#### Finding
-
 ![](images/IsItMeYoureLookingFor.jpg) 
+
+#### Finding
 
 * get item (by index)
 * find item (by value)
@@ -121,60 +121,93 @@ remaining list: ['elephant', 'giraffe']
 A few random operations, involving random data. More verbose output.
 
 ```
-RANDOM TEST: seed=54217
+Running test 5: RANDOM TEST
+seed=89951
+last_operation_str: add_head, item=3487
+list is: [3487]
+    length is: 1
+    cache is: (0, 3487), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --)
+--------------------
+last_operation_str: add_head, item=3487
+list is: [3487]
+    length is: 1
+    cache is: (0, 3487), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --)
+--------------------
+last_operation_str: add_tail, item=283
+list is: [3487, 283]
+    length is: 2
+    cache is: (0, 3487), (1, 283), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --)
+--------------------
+last_operation_str: pop_head
+list is: [283]
+    length is: 1
+    cache is: (0, 283), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --)
+--------------------
+last_operation_str: add_head, item=937
+list is: [937, 283]
+    length is: 2
+    cache is: (0, 937), (1, 283), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --)
+--------------------
+last_operation_str: pop_head
+list is: [283]
+    length is: 1
+    cache is: (0, 283), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --)
+--------------------
 last_operation_str: pop_head
 list is: []
     length is: 0
-    cached index: -1
-    cached item: NONE
+    cache is: (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --)
 --------------------
-last_operation_str: add_head, item=9458
-list is: [9458]
+last_operation_str: pop_head
+list is: []
+    length is: 0
+    cache is: (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --)
+--------------------
+last_operation_str: add_head, item=9150
+list is: [9150]
     length is: 1
-    cached index: 0
-    cached item: 9458
+    cache is: (0, 9150), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --)
 --------------------
-last_operation_str: add_tail, item=4619
-list is: [9458, 4619]
+last_operation_str: pop_head
+list is: []
+    length is: 0
+    cache is: (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --)
+--------------------
+last_operation_str: pop_head
+list is: []
+    length is: 0
+    cache is: (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --)
+--------------------
+last_operation_str: add_head, item=689
+list is: [689]
+    length is: 1
+    cache is: (0, 689), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --)
+--------------------
+last_operation_str: add_head, item=689
+list is: [689]
+    length is: 1
+    cache is: (0, 689), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --)
+--------------------
+last_operation_str: add_tail, item=7896
+list is: [689, 7896]
     length is: 2
-    cached index: 0
-    cached item: 9458
+    cache is: (0, 689), (1, 7896), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --)
 --------------------
-last_operation_str: add_head, item=2845
-list is: [2845, 9458, 4619]
+last_operation_str: add_head, item=9073
+list is: [9073, 689, 7896]
     length is: 3
-    cached index: 1
-    cached item: 9458
+    cache is: (0, 9073), (1, 689), (2, 7896), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --)
 --------------------
-last_operation_str: add_head, item=2845
-list is: [2845, 9458, 4619]
-    length is: 3
-    cached index: 1
-    cached item: 9458
---------------------
-last_operation_str: pop_tail
-list is: [2845, 9458]
-    length is: 2
-    cached index: 1
-    cached item: 9458
---------------------
-last_operation_str: insert, item=9493 at 1
-list is: [2845, 9493, 9458]
-    length is: 3
-    cached index: 1
-    cached item: 9493
---------------------
-last_operation_str: insert, item=9245 at 1
-list is: [2845, 9245, 9493, 9458]
+last_operation_str: add_head, item=9370
+list is: [9370, 9073, 689, 7896]
     length is: 4
-    cached index: 1
-    cached item: 9245
+    cache is: (0, 9370), (1, 9073), (2, 689), (3, 7896), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --), (-1, --)
 --------------------
 ```
 ...
 snipped
 ...
 ```
-linked list [1274, 2845, 9245, 9493, 4743, 4949, 2069, 9673, 3226, 6419, 5021, 9050, 9103, 6787, 9332]
-python list [1274, 2845, 9245, 9493, 4743, 4949, 2069, 9673, 3226, 6419, 5021, 9050, 9103, 6787, 9332]
+linked list [7969, 8915, 9370, 9884, 3455, 9035, 8624, 5940, 3474, 5853, 4728, 4156, 5457, 537]
+python list [7969, 8915, 9370, 9884, 3455, 9035, 8624, 5940, 3474, 5853, 4728, 4156, 5457, 537]
 ```
