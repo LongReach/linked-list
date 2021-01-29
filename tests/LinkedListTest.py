@@ -19,7 +19,7 @@ random.seed(random_seed)
 
 failed_tests = []
 default_tests = ["BASIC TEST A", "BASIC TEST B", "BASIC TEST C", "FIND TEST", "RANDOM TEST", "RANDOM SEARCH",
-                 "SORTING", "JOINING", "SPLITTING", "ITERATOR", "CACHE"]
+                 "SORTING", "JOINING", "SPLITTING", "ITERATOR", "CACHE", "GIANT LIST"]
 tests_to_run = set()
 if args.test == -1:
     for i in range(len(default_tests)):
@@ -239,6 +239,17 @@ if should_run_test(11):
         print("Cache is: ", fruit_ll.get_cache_as_str())
         tl.validity_failure = True
     handle_test_failure(11)
+
+if should_run_test(12):
+    list_size = 1000000
+    giant_ll = tl.TestList([random.randrange(1000) for i in range(list_size)])
+    print("Validating giant list (slow)")
+    for i in range(5):
+        print("step", (i+1), "out of 5")
+        random_num = random.randrange(list_size)
+        giant_ll.get_item(random_num)
+        if tl.validity_failure: break
+    handle_test_failure(12)
 
 if len(failed_tests) > 0:
     # If we don't get into this block of code, all tests were successful. If we do, we see a printout of which ones

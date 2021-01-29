@@ -355,10 +355,13 @@ class LinkedList(object):
         options = [(target_idx, 0, self.head), # representing start of linked list
                          (target_idx - (self.size()-1), self.size()-1, self.tail)] # end of l. list
 
-        for n in range(len(self.cached_nodes)):
-            if self.cached_nodes[n].valid():
+        # in theory, it's possible for this function to return -1, which will lead to a slower search,
+        # but in reality, that doesn't happen much, if at all
+        cache_n = self._find_cache_entry(target_idx)
+        if cache_n != -1:
+            if self.cached_nodes[cache_n].valid():
                 # There is a cached node
-                options.append((target_idx - self.cached_nodes[n].idx, self.cached_nodes[n].idx, self.cached_nodes[n].node))
+                options.append((target_idx - self.cached_nodes[cache_n].idx, self.cached_nodes[cache_n].idx, self.cached_nodes[cache_n].node))
 
         # Find best option
         best_delta = self.size()
@@ -383,19 +386,54 @@ class LinkedList(object):
             self._rebuild_cache()
             return
 
+        # in theory, it's possible for this function to return -1, which will lead to a slower search,
+        # but in reality, that doesn't happen much, if at all
+        start_cache_n = self._find_cache_entry(item_index)
+        if start_cache_n == -1:
+            start_cache_n = 0
         if item_added:
             # If item inserted at n, all cache entries of index n or greater are shifted right
-            for n in range(len(self.cached_nodes)):
+            for n in range(start_cache_n,len(self.cached_nodes)):
                 if self.cached_nodes[n].idx >= item_index:
                     self.cached_nodes[n].idx = self.cached_nodes[n].idx + 1
         else:
             # If item removed at n, all cache entries of index n+1 or greater are shifted left. Index n is cleared.
-            for n in range(len(self.cached_nodes)):
+            for n in range(start_cache_n,len(self.cached_nodes)):
                 if self.cached_nodes[n].idx == item_index:
                     self.cached_nodes[n].clear()
                     self.num_valid_cache_entries = self.num_valid_cache_entries - 1
                 elif self.cached_nodes[n].idx > item_index:
                     self.cached_nodes[n].idx = self.cached_nodes[n].idx - 1
+
+    # This does a recursive "dictionary search" to find the cached node that comes as close as possible
+    # to the desired list_idx, but doesn't come after it
+    def _find_cache_entry(self, list_idx, start_n=None, end_n=None):
+
+        def _get_to_valid_node(n, dir, lower_bound, upper_bound):
+            while self.cached_nodes[n].node is None:
+                n = n + dir
+                if n < lower_bound:
+                    return -1
+                if n > upper_bound:
+                    return -1
+            return n
+
+        if start_n is None: start_n = 0
+        if end_n is None: end_n = len(self.cached_nodes) - 1
+        start_n = _get_to_valid_node(start_n, 1, start_n, end_n)
+        if start_n == -1: return -1
+        end_n = _get_to_valid_node(end_n, -1, start_n, end_n)
+        if end_n == -1: return -1
+
+        halfway_n = _get_to_valid_node(int((start_n + end_n) / 2), -1, start_n, end_n)
+        if halfway_n == -1: return -1
+        if halfway_n == start_n or halfway_n == end_n: return halfway_n
+        if self.cached_nodes[halfway_n].idx > list_idx:
+            # the one we're looking for is somewhere between start_n and halfway_n
+            return self._find_cache_entry(list_idx, start_n, halfway_n)
+        else:
+            # the one we're looking for is somewhere between halfway_n and end_n
+            return self._find_cache_entry(list_idx, halfway_n, end_n)
 
     # The val_func, if specified, returns the value for comparison. If reverse is True, we are going higher-to-lower
     # instead of lower to higher.
