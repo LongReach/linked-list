@@ -19,7 +19,7 @@ random.seed(random_seed)
 
 failed_tests = []
 default_tests = ["BASIC TEST A", "BASIC TEST B", "BASIC TEST C", "FIND TEST", "RANDOM TEST", "RANDOM SEARCH",
-                 "SORTING", "JOINING", "SPLITTING", "ITERATOR"]
+                 "SORTING", "JOINING", "SPLITTING", "ITERATOR", "CACHE"]
 tests_to_run = set()
 if args.test == -1:
     for i in range(len(default_tests)):
@@ -46,7 +46,6 @@ if should_run_test(1):
     words = ["alpha", "bravo", "charlie", "delta", "echo", "foxtrot"]
     callsign_ll = tl.TestList(words)
     callsign_ll.verbosity = verbosity
-    callsign_ll.test_new_cache_item(3)
     callsign_ll.reverse_list()
     callsign_ll.reverse_list()
     callsign_ll.pop_head()
@@ -62,7 +61,6 @@ if should_run_test(2):
     number_ll.verbosity = verbosity
     number_ll.add_head("two")
     number_ll.add_head("one")
-    number_ll.test_new_cache_item(0)
     number_ll.pop_head()
     number_ll.pop_head(expected_list=[])
     number_ll.add_head("zzz", expected_list=["zzz"])
@@ -171,19 +169,14 @@ if should_run_test(6):
 
     for i in range(10):
         rand_index = random.randrange(rand_ll.size())
-        old_cached_index = rand_ll.cached_ref.idx
         item = rand_ll.get_item(rand_index)
         if verbosity > 0:
-            print("Item at {} is:".format(rand_index), item, "cached index moves from {} to {}".format(old_cached_index, rand_ll.cached_ref.idx))
+            print("Item at {} is:".format(rand_index), item)
         else:
             print("Item at {} is:".format(rand_index), item)
         valid, error_str = rand_ll.validate()
         if not valid:
             print("Validity error:", error_str)
-            tl.validity_failure = True
-        # make sure that retrieved item matches item in python list
-        if python_list[rand_ll.cached_ref.idx] != item:
-            print("Cache index is wrong")
             tl.validity_failure = True
     handle_test_failure(6)
 
@@ -237,6 +230,15 @@ if should_run_test(10):
     if not fruit_ll.compare(['tomato', 'apple', 'orange', 'pear', 'coconut', 'banana', 'grape', 'lemon', 'lime', 'grapefruit']):
         tl.validity_failure = True
     handle_test_failure(10)
+
+if should_run_test(11):
+    fruit_ll.change_cache_entry(2, 5)
+    valid, error_str = fruit_ll.validate()
+    if valid:
+        print("Cache was not invalidated, as expected")
+        print("Cache is: ", fruit_ll.get_cache_as_str())
+        tl.validity_failure = True
+    handle_test_failure(11)
 
 if len(failed_tests) > 0:
     # If we don't get into this block of code, all tests were successful. If we do, we see a printout of which ones

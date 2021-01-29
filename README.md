@@ -18,7 +18,7 @@ Feel free to use this code.
 
 This is a doubly-linked list, as shown above. It does many of the common things we would want a linked list class to be able to do.
 
-One innovation I added is the concept of a cached node. The linked list remembers the last item accessed and its index within the list. That way, future operations that involve an index will try to find the requested node starting from the cached one, if this seems advantageous. This can be faster than iterating through the entire list each time we want an item at some arbitrary index, especially if the caller is requesting items that are close to each other.
+One innovation I added is the concept of a node cache. That is, the linked list maintains a cache of select nodes that it remembers the indices of. Periodically, the cache is rebuilt, with the cached nodes distributed more or less evenly across the whole list. Thus, if the caller wants the item at a particular index, it's not necessary to iterate through the entire linked list. Rather, the cache is searched for a node close to the desired one and iteration happens from there.
 
 ## Operations
 

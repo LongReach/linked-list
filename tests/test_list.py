@@ -20,8 +20,7 @@ def test_function_decorator(func_to_wrap):
         if ref.verbosity == TestList.HIGH:
             print("list is:", ref.get_items())
             print("    length is:", ref.size())
-            print("    cached index:", ref.cached_ref.idx)
-            print("    cached item:", "NONE" if ref.cached_ref.empty() else ref.cached_ref.node.item)
+            print("    cache is:", ref.get_cache_as_str())
         if not valid:
             validity_failure = True
             print("    *** validity failed ***, error code:", error_str)
@@ -124,10 +123,21 @@ class TestList(LinkedList):
         result = super().split(index)
         return TestList(result.get_items()) # A bit of a hack, but fine for testing
 
-    @test_function_decorator
-    def test_new_cache_item(self, idx, expected_list=None):
-        self.last_operation_str = "new_cached_item, idx={}".format(idx)
-        self._new_cache_item(idx)
+    def change_cache_entry(self, cache_idx, new_list_idx=None, clear_node=True):
+        if cache_idx < 0 or cache_idx >= len(self.cached_nodes): return
+        if new_list_idx is not None:
+            self.cached_nodes[cache_idx].idx = new_list_idx
+        if clear_node:
+            self.cached_nodes[cache_idx].node = None
+
+    def get_cache_as_str(self):
+        the_str = ""
+        add_comma = False
+        for n in range(len(self.cached_nodes)):
+            the_str = the_str + (", " if add_comma else "");
+            the_str = the_str + "(" + str(self.cached_nodes[n].idx) + ", " + ("--" if self.cached_nodes[n].node is None else str(self.cached_nodes[n].node.item)) + ")"
+            add_comma = True
+        return the_str
 
     def compare(self, expected_list):
         if self.length != len(expected_list):
@@ -163,15 +173,17 @@ class TestList(LinkedList):
         if self.head is not None and self.tail is None:
             error_str = "only head defined"
             return False, error_str
-        if self.cached_ref.idx == -1:
-            if self.cached_ref.node is not None:
-                error_str = "cached node doesn't match index"
-                return False, error_str
-        else:
-            node = self.head
-            for i in range(self.cached_ref.idx):
-                node = node.next
-            if node is not self.cached_ref.node:
-                error_str = "cached node doesn't match index"
-                return False, error_str
+        for n in range(len(self.cached_nodes)):
+            if self.cached_nodes[n].idx == -1:
+                if self.cached_nodes[n].node is not None:
+                    error_str = "cached node doesn't match index"
+                    return False, error_str
+            else:
+                node = self.head
+                for i in range(self.cached_nodes[n].idx):
+                    if node is None: break
+                    node = node.next
+                if node is not self.cached_nodes[n].node:
+                    error_str = "cached node doesn't match index"
+                    return False, error_str
         return True, ""
