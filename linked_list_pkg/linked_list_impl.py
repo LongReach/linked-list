@@ -54,8 +54,7 @@ class LinkedList(object):
         self.head = None
         self.tail = None
         self.length = 0
-        # if we deal with a node that's not the head or tail, cached_node/cached_index keep track of it
-        self.cached_ref = LinkedList.NodeRef()
+        self._rebuild_cache()
 
         if iterable is not None:
             for i in iterable:
@@ -116,7 +115,7 @@ class LinkedList(object):
                 new_node.prev.next = new_node
             node_to_precede.prev = new_node
             self.length = self.length + 1
-            self.cached_ref.set(new_node, index)
+            self._adjust_cache(True, index)
 
     # --------------------------------------
     # Functions for removing items
@@ -184,7 +183,6 @@ class LinkedList(object):
         if index < 0 or index >= self.size():
             raise IndexError("linked list index out of range")
         node = self._get_to_index(index)
-        self.cached_ref.set(node, index)
         return node.item
 
     # Locates item in list, starting from start_index.
@@ -202,7 +200,6 @@ class LinkedList(object):
         idx = start_index
         while node is not None:
             if node.item == item:
-                self.cached_ref.set(node, idx)
                 return idx
             idx = idx + (-1 if backwards else 1)
             node = node.prev if backwards else node.next
@@ -226,7 +223,8 @@ class LinkedList(object):
         self.head = None
         self.tail = None
         self.length = 0
-        self.cached_ref.clear()
+        self.cached_nodes = []
+        self.num_valid_cache_entries = 0
 
     # Makes a copy of this list
     def copy(self):
@@ -250,8 +248,8 @@ class LinkedList(object):
         orig_tail = self.tail
         self.tail = self.head
         self.head = orig_tail
-        if self.cached_ref.idx != -1:
-            self.cached_ref.idx = size - 1 - self.cached_ref.idx
+        # TODO: revisit this
+        self._rebuild_cache()
 
     # Sorts the list. If the val_func is set, it must return a particular piece of data from the object stored in
     # the list (presumably, they're all of the same type). Otherwise, the objects themselves will be compared.
@@ -265,7 +263,7 @@ class LinkedList(object):
         while new_tail_node.next is not None:
             new_tail_node = new_tail_node.next
         self.tail = new_tail_node
-        self.cached_ref.clear()
+        self._rebuild_cache()
 
     # Given another linked list, join its contents to the tail of this one. The other list is cleared.
     def join(self, other_list):
@@ -285,7 +283,7 @@ class LinkedList(object):
             self.tail = new_tail_node
         self.length = size + size2
         other_list.clear()
-        self.cached_ref.clear()
+        self._rebuild_cache()
 
     # Splits off a separate linked list, beginning with the item at index. If index is the same as the size of
     # the list, then return an empty linked list.
@@ -306,20 +304,43 @@ class LinkedList(object):
         new_list.length = size - index
         self.tail = new_tail
         self.length = index
-        self.cached_ref.clear()
+        self._rebuild_cache()
         return new_list
 
     # --------------------------------------
     # Private helper functions, for internal use
     # --------------------------------------
 
-    # For debugging purposes, changes the cached node
-    def _new_cache_item(self, idx):
-        if self.size() == 0: return
+    # Rebuilds the cache by stepping through the list, periodically recording a cache node
+    def _rebuild_cache(self):
+        self.cached_nodes = []
+        self.num_valid_cache_entries = 0
+        cache_size = 10 if self.length <= 10 else (50 if self.length <= 1000 else 100);
+        skip_amount = 1 if cache_size >= self.length else int(self.length / cache_size)
+        self.cached_nodes = [LinkedList.NodeRef() for i in range(cache_size)]
+        cache_idx = 0
+        list_idx = 0
         node = self.head
-        for i in range(idx):
-            node = node.next
-        self.cached_ref.set(node, idx)
+        while node is not None and cache_idx < cache_size:
+            self.cached_nodes[cache_idx].set(node, list_idx)
+            for n in range(skip_amount):
+                node = node.next
+                if node is None: break
+            list_idx = list_idx + skip_amount
+            cache_idx = cache_idx + 1
+        self.num_valid_cache_entries = cache_idx
+        self.list_length_at_cache_rebuild = self.length
+
+    def _cache_needs_rebuild(self):
+        # Has list shrunk or grown significantly since last cache rebuild?
+        if self.list_length_at_cache_rebuild < int(self.length * 0.66):
+            return True
+        elif self.list_length_at_cache_rebuild > int(self.length * 1.33):
+            return True
+        # Have a lot of cache entries been invalidated?
+        if self.num_valid_cache_entries < int(len(self.cached_nodes) * 0.66):
+            return True
+        return False
 
     # Returns node at target_idx, takes advantage of caching to get there more quickly
     def _get_to_index(self, target_idx):
@@ -328,9 +349,10 @@ class LinkedList(object):
         options = [(target_idx, 0, self.head), # representing start of linked list
                          (target_idx - (self.size()-1), self.size()-1, self.tail)] # end of l. list
 
-        if self.cached_ref.valid():
-            # There is a cached node
-            options.append((target_idx - self.cached_ref.idx, self.cached_ref.idx, self.cached_ref.node))
+        for n in range(len(self.cached_nodes)):
+            if self.cached_nodes[n].valid():
+                # There is a cached node
+                options.append((target_idx - self.cached_nodes[n].idx, self.cached_nodes[n].idx, self.cached_nodes[n].node))
 
         # Find best option
         best_delta = self.size()
@@ -351,29 +373,23 @@ class LinkedList(object):
     # item_added: True if item was just added, False if removed
     # item_index: which item was just added or subtracted
     def _adjust_cache(self, item_added, item_index):
-        if self.cached_ref.idx == -1:
-            # We don't have a cached node, so pick one and exit
-            if self.size() > 0:
-                target_idx = int(self.size() / 2) # go to middle of list
-                self.cached_ref.set(self._get_to_index(target_idx), target_idx)
+        if self._cache_needs_rebuild():
+            self._rebuild_cache()
             return
 
         if item_added:
-            if item_index <= self.cached_ref.idx:
-                self.cached_ref.increment() # cached node index pushed to right
+            # If item inserted at n, all cache entries of index n or greater are shifted right
+            for n in range(len(self.cached_nodes)):
+                if self.cached_nodes[n].idx >= item_index:
+                    self.cached_nodes[n].idx = self.cached_nodes[n].idx + 1
         else:
-            # item removed
-            if self.size() == 0:
-                # The list is now empty
-                self.cached_ref.clear()
-            else:
-                if item_index == self.cached_ref.idx:
-                    # Cached node pointer was pointing to node that got deleted
-                    self.cached_ref.clear()
-                elif item_index < self.cached_ref.idx:
-                    self.cached_ref.decrement()
-        if self.cached_ref.idx >= self.size():
-            self.cached_ref.decrement()
+            # If item removed at n, all cache entries of index n+1 or greater are shifted left. Index n is cleared.
+            for n in range(len(self.cached_nodes)):
+                if self.cached_nodes[n].idx == item_index:
+                    self.cached_nodes[n].clear()
+                    self.num_valid_cache_entries = self.num_valid_cache_entries - 1
+                elif self.cached_nodes[n].idx > item_index:
+                    self.cached_nodes[n].idx = self.cached_nodes[n].idx - 1
 
     # The val_func, if specified, returns the value for comparison. If reverse is True, we are going higher-to-lower
     # instead of lower to higher.
