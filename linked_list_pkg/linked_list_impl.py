@@ -58,7 +58,9 @@ class LinkedList(object):
 
         if iterable is not None:
             for i in iterable:
-                self.add_tail(i)
+                node = ListNode(i)
+                self._add_to_tail_internal(node)
+            self._rebuild_cache()
 
     # Support for iteration using 'for'. A NodeRef object serves as the iterator.
     def __iter__(self):
@@ -86,17 +88,10 @@ class LinkedList(object):
 
     # Adds item to tail of linked list
     def add_tail(self, item):
+        old_size = self.length
         node = ListNode(item)
-        size = self.length
-        if size == 0:
-            self.head = node
-            self.tail = node
-        else:
-            node.prev = self.tail
-            self.tail.next = node
-            self.tail = node
-        self.length = self.length + 1
-        self._adjust_cache(True, size)
+        self._add_to_tail_internal(node)
+        self._adjust_cache(True, old_size)
 
     # Inserts item into list, before item at specified index. If index == length of list, place after last item.
     def insert(self, item, index=0):
@@ -116,6 +111,17 @@ class LinkedList(object):
             node_to_precede.prev = new_node
             self.length = self.length + 1
             self._adjust_cache(True, index)
+
+    # A helper function that doesn't do cache adjustments
+    def _add_to_tail_internal(self, node):
+        if self.length == 0:
+            self.head = node
+            self.tail = node
+        else:
+            node.prev = self.tail
+            self.tail.next = node
+            self.tail = node
+        self.length = self.length + 1
 
     # --------------------------------------
     # Functions for removing items
