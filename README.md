@@ -4,6 +4,12 @@
 
 ## Overview
 
+_2025 Note:_
+
+To potential employers: I created this back in 2020. My Python skills have improved a great deal since then.
+
+_Original Text:_
+
 Python has lists, obviously, but they're really arrays under the hood. I decided to try my hand at creating a proper linked list class, one with the traditional advantages of linked lists, such as fast insertion or removal operations. I'm sure I was reinventing the wheel, but this was still a worthwhile exercise for me.
 
 I also created a test framework, which takes advantage of Python decorators. The test module creates a series of linked lists and performs various operations on them. At each step, the decorator function makes sure the list is valid.
