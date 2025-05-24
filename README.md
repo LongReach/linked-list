@@ -2,11 +2,11 @@
 
 **A Python Implementation of a Linked List**
 
-## Overview
-
-_2025 Note:_
+## 2025 Note
 
 To potential employers: I created this back in 2020. My Python skills have improved a great deal since then.
+
+## Overview
 
 _Original Text:_
 
